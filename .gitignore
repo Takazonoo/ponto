@@ -1,0 +1,17 @@
+target/
+.local/
+.env
+.env.*
+!.env.example
+/RETOMADA.md
+/data/
+/backups/
+*.log
+*.dump
+*.backup
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+
