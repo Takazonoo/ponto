@@ -24,12 +24,20 @@ class RegistrationPolicy {
             return;
         }
         String first = email(firstEmail);
+        if (!validCode(firstCode)) {
+            throw new IllegalStateException("Configure um código válido para o primeiro convite.");
+        }
+        Invite firstInvite = new Invite(firstCode.toLowerCase(Locale.ROOT), "invited-1");
+        if (secondEmail.isBlank() && secondCode.isBlank()) {
+            invites = Map.of(first, firstInvite);
+            return;
+        }
         String second = email(secondEmail);
-        if (first.equals(second) || !validCode(firstCode) || !validCode(secondCode)
+        if (first.equals(second) || !validCode(secondCode)
             || firstCode.equalsIgnoreCase(secondCode)) {
             throw new IllegalStateException("Configure dois convites diferentes para o cadastro privado.");
         }
-        invites = Map.of(first, new Invite(firstCode.toLowerCase(Locale.ROOT), "invited-1"),
+        invites = Map.of(first, firstInvite,
             second, new Invite(secondCode.toLowerCase(Locale.ROOT), "invited-2"));
     }
 
@@ -60,7 +68,7 @@ class RegistrationPolicy {
     private static String email(String raw) {
         String email = raw.strip().toLowerCase(Locale.ROOT);
         if (email.length() > 254 || !email.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) {
-            throw new IllegalStateException("Configure dois e-mails válidos para o cadastro privado.");
+            throw new IllegalStateException("Configure um e-mail válido para cada convite.");
         }
         return email;
     }

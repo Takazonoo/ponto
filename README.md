@@ -43,8 +43,8 @@ O `Dockerfile` prepara o Ponto para um **Web Service Docker** no [Render Free](h
    | `DATABASE_URL` | `jdbc:postgresql://HOST/BASE?sslmode=verify-full&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory` |
    | `DATABASE_USER` | `ponto_app` |
    | `DATABASE_PASSWORD` | Senha do papel `ponto_app` |
-   | `PONTO_INVITE_EMAIL_1` e `PONTO_INVITE_EMAIL_2` | Os dois e-mails autorizados a entrar |
-   | `PONTO_INVITE_CODE_1` e `PONTO_INVITE_CODE_2` | Dois códigos distintos de 64 caracteres hexadecimais, gerados aleatoriamente |
+   | `PONTO_INVITE_EMAIL_1` e `PONTO_INVITE_EMAIL_2` | E-mail autorizado e segundo e-mail opcional |
+   | `PONTO_INVITE_CODE_1` e `PONTO_INVITE_CODE_2` | Um código aleatório de 64 caracteres hexadecimais por e-mail configurado |
 
    Para gerar cada código no PowerShell, execute o bloco abaixo uma vez e use a saída apenas na configuração do Render e no convite individual.
 
@@ -56,11 +56,11 @@ O `Dockerfile` prepara o Ponto para um **Web Service Docker** no [Render Free](h
    -join ($bytes | ForEach-Object { $_.ToString('x2') })
    ```
 
-4. Antes de usar dados reais, acesse a URL HTTPS e confirme que **Entrar → Usar convite** exige o e-mail e o código corretos. Crie as duas contas e faça um lançamento fictício em uma delas. Abra a outra conta em um navegador separado e verifique saldo, lançamentos e fatura. Confira também se `/api/dashboard?month=2026-11` retorna `401` em uma janela anônima. Cada convite pode registrar apenas a conta de e-mail a que foi associado.
+4. Antes de usar dados reais, acesse a URL HTTPS e confirme que **Entrar → Usar convite** exige o e-mail e o código corretos. Crie a conta e valide um lançamento fictício. Se houver segundo convite, verifique em outra sessão se os dados ficam separados. Confira também se `/api/dashboard?month=2026-11` retorna `401` em uma janela anônima. Cada convite pode registrar apenas a conta de e-mail a que foi associado.
 
 5. Comece com um banco vazio ou restaure um backup específico por uma operação separada. Para uso contínuo, mantenha cópias criptografadas fora do ambiente de hospedagem e verifique periodicamente se o backup pode ser restaurado.
 
-O endereço pode abrir a demonstração para visitantes. A API exige sessão para acessar dados reais e aceita login somente dos dois e-mails configurados. O perfil hospedado usa cookies seguros, bloqueia scripts e estilos inline e valida a identidade TLS do PostgreSQL. O papel do serviço só recebe os privilégios necessários para operar o site. A separação de dados entre as contas é aplicada na API.
+O endereço pode abrir a demonstração para visitantes. A API exige sessão para acessar dados reais e aceita login somente dos e-mails configurados. O perfil hospedado usa cookies seguros, bloqueia scripts e estilos inline e valida a identidade TLS do PostgreSQL. O papel do serviço só recebe os privilégios necessários para operar o site. A separação de dados entre as contas é aplicada na API.
 
 ### Revalidação do perfil hospedado
 
