@@ -109,7 +109,7 @@ async function test() {
   assert.equal(dashboardA.invoice,42.9);
   assert.equal(dashboardA.balance,1000);
   assert.equal(dashboardA.entries[0].description,entry.description);
-  await checkRendering({html:home.data, script, session, dashboard:dashboardA});
+  await checkRendering({html:(await stranger('/painel.html')).data, script, session, dashboard:dashboardA});
   assert.equal(dashboardB.invoice,0);
   assert.equal(dashboardB.balance,0);
   assert.deepEqual(dashboardB.entries,[]);

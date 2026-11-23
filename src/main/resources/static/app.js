@@ -495,5 +495,7 @@ document.addEventListener('visibilitychange',()=>{
     notice('Dados de demonstração. O servidor é necessário para criar conta e salvar dados.');
   }
   await refresh();
+  const access = new URLSearchParams(window.location.search).get('acesso');
+  if (!signedIn && (access === 'entrar' || access === 'convite')) auth(access === 'convite');
 })();
 })();

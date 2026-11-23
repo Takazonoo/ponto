@@ -3,34 +3,63 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Conheça o Ponto, seu painel para acompanhar lançamentos, saldo e fatura do cartão.">
 <title>Ponto · Controle de gastos</title>
-<link rel="stylesheet" href="style.css">
-<script src="app.js" defer></script>
+<link rel="stylesheet" href="/apresentacao.css">
+<script src="/tour.js" defer></script>
 </head>
 <body>
-<header class="site-header">
-  <a class="brand" href="#visao"><span class="brand-mark"><i data-icon="wallet"></i></span>Ponto<span>.</span></a>
-  <nav aria-label="Menu principal">
-    <a href="#visao" data-view="visao"><i data-icon="grid"></i>Visão geral</a>
-    <a href="#lancamentos" data-view="lancamentos"><i data-icon="repeat"></i>Lançamentos</a>
-    <a href="#conta" data-view="conta"><i data-icon="wallet"></i>Minha conta</a>
-    <a href="#fatura" data-view="fatura"><i data-icon="card"></i>Fatura do cartão</a>
-    <a href="#relatorios" data-view="relatorios"><i data-icon="chart"></i>Relatórios</a>
-  </nav>
-  <div class="header-account">
-    <button type="button" class="profile" id="session-action" aria-label="Entrar ou criar conta"><span class="avatar" id="avatar">P</span><span id="profile-name">Entrar</span></button>
-  </div>
+<header class="top wrap">
+  <a class="logo" href="/" aria-label="Ponto, início">Ponto<span>.</span></a>
+  <nav aria-label="Página de apresentação"><a href="#tour">Como funciona</a><a href="#recursos">Recursos</a></nav>
+  <a class="button outline" href="/painel.html?acesso=entrar">Entrar</a>
 </header>
 <main>
-  <div class="content">
-    <div class="intro">
-      <div><div id="demo-tag" class="demo-tag">Modo demonstração</div><h1 id="page-title">Visão geral</h1><p id="page-description">Acompanhe seu dinheiro em um só lugar.</p></div>
-      <div class="actions"><label class="period"><i data-icon="calendar"></i><span id="month-label"></span><input type="month" id="month" aria-label="Selecionar mês"></label><button class="button primary" id="add"><i data-icon="plus"></i>Novo lançamento</button></div>
+  <section class="hero wrap">
+    <div>
+      <h1>Entenda para onde vai seu dinheiro.</h1>
+      <p>Registre seus gastos, acompanhe o saldo da conta e veja quanto já entrou na fatura do cartão. Tudo no mesmo painel.</p>
+      <div class="actions"><a class="button primary" href="#tour">Ver como funciona</a><a href="/painel.html">Experimentar o painel</a></div>
     </div>
-    <div id="notice" role="status" hidden></div>
-    <div id="view" aria-live="polite"></div>
-  </div>
+    <figure class="preview">
+      <figcaption>Visão geral <span>Exemplo fictício</span></figcaption>
+      <div class="metrics"><div>Saldo atual<strong>R$ 840,00</strong></div><div>Fatura do mês<strong>R$ 354,40</strong></div></div>
+      <div class="activity">
+        <div class="activity-heading"><b>Gastos na semana</b><span>Seg → Dom</span></div>
+        <div class="activity-bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="sample"><b>Lançamentos recentes</b><div>Almoço <span>− R$ 28,00</span></div></div>
+    </figure>
+  </section>
+  <section class="tour-section" id="tour">
+    <div class="wrap section">
+      <h2>Da compra à fatura</h2>
+      <p class="tour-intro">Acompanhe um lançamento no crédito, do preenchimento ao total atualizado.</p>
+      <div class="tour-story">
+        <article data-tour-scene="expense">
+          <div class="tour-copy"><h3>O almoço foi no cartão</h3><p>Em <strong>Novo lançamento</strong>, escolha <strong>Despesa</strong>, informe o que comprou, selecione a categoria e o pagamento no crédito. Digite o valor e salve.</p><button type="button" class="tour-replay" hidden>Rever lançamento da compra</button></div>
+          <figure class="tour-screen"><figcaption class="tour-top"><b>Ponto.</b><span>Lançamentos</span><span>Exemplo fictício</span></figcaption><div class="tour-content"></div></figure>
+        </article>
+      </div>
+    </div>
+  </section>
+  <section class="features" id="recursos">
+    <div class="wrap section">
+      <h2>O que você encontra no Ponto</h2>
+      <div class="cards">
+        <article><h3>Categorias</h3><p>Veja o peso de cada tipo de gasto no mês.</p><div class="card-example"><span>Alimentação</span><strong>R$ 240,00</strong></div><div class="category-bar" aria-hidden="true"></div></article>
+        <article><h3>Lançamentos</h3><p>Encontre e edite receitas e despesas em um só lugar.</p><div class="card-example"><span>Almoço <small>· Crédito</small></span><strong>− R$ 28,00</strong></div></article>
+        <article><h3>Minha conta</h3><p>Confira como as entradas e saídas mudam seu saldo.</p><div class="card-example"><span>Pix recebido</span><strong>+ R$ 150,00</strong></div><div class="card-example"><span>Saldo atualizado</span><strong>R$ 990,00</strong></div></article>
+        <article><h3>Fatura</h3><p>Acompanhe as compras do cartão e o total em aberto.</p><div class="card-example"><span>Fatura do mês</span><strong>R$ 354,40</strong></div></article>
+      </div>
+    </div>
+  </section>
+  <section class="wrap section access">
+    <h2>Acesse sua conta</h2>
+    <p>Já usa o Ponto? Entre com seu e-mail e sua senha. Se recebeu um convite, crie sua conta.</p>
+    <div class="actions"><a class="button primary" href="/painel.html?acesso=entrar">Entrar</a><a class="button outline" href="/painel.html?acesso=convite">Tenho um convite</a></div>
+  </section>
 </main>
-<dialog id="modal"><div class="modal-header"><h2 id="modal-title"></h2><button type="button" class="icon-button" id="close" aria-label="Fechar"><i data-icon="close"></i></button></div><form id="modal-form"><div id="fields"></div><p id="form-error" role="alert"></p><div class="modal-actions"><button type="button" class="button secondary" id="alternate"></button><button class="button primary" id="submit"></button></div></form></dialog>
+<footer class="wrap footer"><a class="logo" href="/">Ponto<span>.</span></a></footer>
 </body>
 </html>

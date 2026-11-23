@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ponto · Controle de gastos</title>
+<link rel="stylesheet" href="style.css">
+<script src="app.js" defer></script>
+</head>
+<body>
+<header class="site-header">
+  <a class="brand" href="#visao"><span class="brand-mark"><i data-icon="wallet"></i></span>Ponto<span>.</span></a>
+  <nav aria-label="Menu principal">
+    <a href="#visao" data-view="visao"><i data-icon="grid"></i>Visão geral</a>
+    <a href="#lancamentos" data-view="lancamentos"><i data-icon="repeat"></i>Lançamentos</a>
+    <a href="#conta" data-view="conta"><i data-icon="wallet"></i>Minha conta</a>
+    <a href="#fatura" data-view="fatura"><i data-icon="card"></i>Fatura do cartão</a>
+    <a href="#relatorios" data-view="relatorios"><i data-icon="chart"></i>Relatórios</a>
+  </nav>
+  <div class="header-account">
+    <button type="button" class="profile" id="session-action" aria-label="Entrar ou criar conta"><span class="avatar" id="avatar">P</span><span id="profile-name">Entrar</span></button>
+  </div>
+</header>
+<main>
+  <div class="content">
+    <div class="intro">
+      <div><div id="demo-tag" class="demo-tag">Modo demonstração</div><h1 id="page-title">Visão geral</h1><p id="page-description">Acompanhe seu dinheiro em um só lugar.</p></div>
+      <div class="actions"><label class="period"><i data-icon="calendar"></i><span id="month-label"></span><input type="month" id="month" aria-label="Selecionar mês"></label><button class="button primary" id="add"><i data-icon="plus"></i>Novo lançamento</button></div>
+    </div>
+    <div id="notice" role="status" hidden></div>
+    <div id="view" aria-live="polite"></div>
+  </div>
+</main>
+<dialog id="modal"><div class="modal-header"><h2 id="modal-title"></h2><button type="button" class="icon-button" id="close" aria-label="Fechar"><i data-icon="close"></i></button></div><form id="modal-form"><div id="fields"></div><p id="form-error" role="alert"></p><div class="modal-actions"><button type="button" class="button secondary" id="alternate"></button><button class="button primary" id="submit"></button></div></form></dialog>
+</body>
+</html>
