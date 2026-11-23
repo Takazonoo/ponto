@@ -37,18 +37,18 @@
       field.querySelector('b').textContent = value;
     }
     const moments = [
-      [250, () => { sheet.dataset.stage = 'open'; action.classList.remove('is-active'); }],
-      [380, () => {
+      [320, () => { sheet.dataset.stage = 'open'; action.classList.remove('is-active'); }],
+      [1000, () => {
         const type = fields.get('type');
         focus(type);
         [...type.querySelectorAll('b')].find(option => option.textContent === entry.type).classList.add('selected');
       }],
-      [450, () => fill('description', entry.description)],
-      [380, () => fill('category', entry.category)],
-      [450, () => fill('method', entry.method)],
-      ...[...entry.amount].map((_, index) => [140, () => fill('amount', 'R$ ' + entry.amount.slice(0, index + 1))]),
-      [510, () => focus(save)],
-      [380, () => {
+      [1000, () => fill('description', entry.description)],
+      [1000, () => fill('category', entry.category)],
+      [1000, () => fill('method', entry.method)],
+      ...[...entry.amount].map((_, index) => [index === 0 ? 1000 : 175, () => fill('amount', 'R$ ' + entry.amount.slice(0, index + 1))]),
+      [1000, () => focus(save)],
+      [450, () => {
         focus(null);
         save.hidden = true;
         content.querySelector('.tour-result').hidden = false;
