@@ -1,70 +1,73 @@
 # Ponto
 
-Controle pessoal de gastos com Java 21, Spring Boot e PostgreSQL. O painel permite registrar receitas e despesas, acompanhar saldo e fatura e consultar ou imprimir relatórios mensais.
+![Java 21](https://img.shields.io/badge/Java-21-B45309)
+![Spring Boot 4.1](https://img.shields.io/badge/Spring%20Boot-4.1-397C40)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-banco%20de%20dados-31648C)
+![JavaScript](https://img.shields.io/badge/JavaScript-frontend-E6B800)
+![Docker](https://img.shields.io/badge/Docker-cont%C3%AAiner-1874B9)
+![Render](https://img.shields.io/badge/Render-hospedagem-315747)
+![Neon](https://img.shields.io/badge/Neon-PostgreSQL-18754E)
 
+O Ponto é um aplicativo web de controle pessoal de gastos. Registre receitas e despesas, acompanhe seu saldo e a fatura do cartão e consulte ou imprima relatórios mensais. A demonstração pública usa dados fictícios. O piloto hospedado usa cadastro por convite.
 
-## Rodar localmente
+**[Abrir o Ponto](https://ponto-4tz8.onrender.com/)** · [Arquitetura](#arquitetura) · [Tecnologias](#tecnologias)
 
-É necessário ter Java 21 ou posterior, Maven e PostgreSQL. Crie um usuário e um banco próprios para a aplicação. Em um terminal SQL conectado como administrador do PostgreSQL, execute:
+## Telas do Ponto
 
-```sql
-CREATE ROLE controle WITH LOGIN;
-\password controle
-CREATE DATABASE controledegastos OWNER controle;
+### Página de entrada
+
+A apresentação explica o produto e mostra como uma compra no crédito entra na fatura.
+
+![Página pública de apresentação do Ponto](docs/imagens/entrada.png)
+
+### Visão geral
+
+O painel reúne saldo, receitas, despesas, fatura e a evolução dos gastos.
+
+![Painel de visão geral com dados fictícios](docs/imagens/painel.png)
+
+### Lançamentos
+
+A lista permite filtrar movimentações e consultar a categoria, o meio de pagamento e o valor de cada registro.
+
+![Tela de lançamentos com dados fictícios](docs/imagens/lancamentos.png)
+
+## Arquitetura
+
+```text
+                     HTTPS
+Navegador ──────────────────────► Render · contêiner Docker
+                                   └─ Spring Boot · Java 21
+                                      ├─ HTML, CSS e JavaScript
+                                      └─ API HTTP · Spring MVC
+                                               │
+                                               │ JDBC · TLS verificado
+                                               ▼
+                                         Neon · PostgreSQL
 ```
 
-No PowerShell, informe a senha definida acima no prompt seguro e inicie a aplicação:
+O Spring Boot serve as páginas e a API no mesmo domínio. As páginas públicas abrem sem login. A API financeira usa a sessão para identificar a conta e restringir consultas e alterações aos seus registros.
 
-```powershell
-$env:DATABASE_URL = 'jdbc:postgresql://localhost:5432/controledegastos'
-$env:DATABASE_USER = 'controle'
-$env:DATABASE_PASSWORD = [System.Net.NetworkCredential]::new('', (Read-Host 'Senha do PostgreSQL' -AsSecureString)).Password
-mvn spring-boot:run
-```
+## Tecnologias
 
-Abra http://localhost:8080. A aplicação cria as tabelas na inicialização. O painel de demonstração pode ser explorado antes do cadastro. Cadastre-se com e-mail ou celular brasileiro com DDD para gravar seus dados.
+| Camada | Tecnologias e responsabilidades |
+| --- | --- |
+| Front-end | HTML, CSS e JavaScript para apresentação, painel, filtros e relatórios |
+| Back-end | Java 21, Spring Boot 4.1, Spring MVC, JDBC e Maven |
+| Banco de dados | PostgreSQL no Neon, esquema SQL e valores monetários em `numeric` com `BigDecimal` no Java |
+| Infraestrutura | Docker multi-stage, serviço web no Render e conexão JDBC com TLS verificado |
+| Segurança | Cadastro por convite, senhas com PBKDF2, cookies de sessão, proteção CSRF e autorização por conta no servidor |
 
-## Hospedar o piloto sem manter o computador ligado
+## Modelo de dados
 
-O `Dockerfile` prepara o Ponto para um **Web Service Docker** no [Render Free](https://render.com/docs/free), com HTTPS e URL própria. Use o [Neon Free](https://neon.com/pricing) para o PostgreSQL persistente. O Render Free adormece após 15 minutos sem uso e pode demorar cerca de um minuto para responder de novo. O PostgreSQL gratuito do próprio Render expira após 30 dias.
+| Tabela | Responsabilidade |
+| --- | --- |
+| `profiles` | Conta do usuário, credenciais protegidas e saldo inicial |
+| `entries` | Receitas e despesas com categoria, meio de pagamento, valor e data |
+| `invoice_payments` | Pagamentos das faturas por conta e mês de referência |
+| `auth_rate_limits` | Controle de tentativas de autenticação e cadastro |
 
-1. Prepare um banco dedicado ao Ponto no Neon. Com a conta de administração do banco, crie o papel abaixo **por SQL** e execute `src/main/resources/schema.sql` seguido de `scripts/grants-hosted.sql`. Defina a senha do papel `ponto_app` no SQL Editor do Neon. Use a conexão direta do Neon e mantenha as credenciais administrativas separadas. [Papéis do Neon](https://neon.com/docs/manage/roles).
-
-   ```sql
-   CREATE ROLE ponto_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
-   ```
-
-2. Use um repositório do site com `Dockerfile`, `.dockerignore`, `pom.xml` e `src/main`. Conecte-o ao Render, selecione **Docker** e **Free**. O contêiner ativa o perfil `hosted`, escuta na porta fornecida pelo Render e espera que o banco já esteja provisionado. [Serviços web do Render](https://render.com/docs/web-services).
-
-3. Configure as variáveis diretamente no ambiente do Render. Guarde a senha do banco e os convites como segredos, fora do Git.
-
-   | Variável | Valor |
-   | --- | --- |
-   | `DATABASE_URL` | `jdbc:postgresql://HOST/BASE?sslmode=verify-full&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory` |
-   | `DATABASE_USER` | `ponto_app` |
-   | `DATABASE_PASSWORD` | Senha do papel `ponto_app` |
-   | `PONTO_INVITE_EMAIL_1` e `PONTO_INVITE_EMAIL_2` | E-mail autorizado e segundo e-mail opcional |
-   | `PONTO_INVITE_CODE_1` e `PONTO_INVITE_CODE_2` | Um código aleatório de 64 caracteres hexadecimais por e-mail configurado |
-
-   Para gerar cada código no PowerShell, execute o bloco abaixo uma vez e use a saída apenas na configuração do Render e no convite individual.
-
-   ```powershell
-   $bytes = New-Object byte[] 32
-   $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
-   $rng.GetBytes($bytes)
-   $rng.Dispose()
-   -join ($bytes | ForEach-Object { $_.ToString('x2') })
-   ```
-
-4. Antes de usar dados reais, acesse a URL HTTPS e confirme que **Entrar → Usar convite** exige o e-mail e o código corretos. Crie a conta e valide um lançamento fictício. Se houver segundo convite, verifique em outra sessão se os dados ficam separados. Confira também se `/api/dashboard?month=2026-11` retorna `401` em uma janela anônima. Cada convite pode registrar apenas a conta de e-mail a que foi associado.
-
-5. Comece com um banco vazio ou restaure um backup específico por uma operação separada. Para uso contínuo, mantenha cópias criptografadas fora do ambiente de hospedagem e verifique periodicamente se o backup pode ser restaurado.
-
-O endereço pode abrir a demonstração para visitantes. A API exige sessão para acessar dados reais e aceita login somente dos e-mails configurados. O perfil hospedado usa cookies seguros, bloqueia scripts e estilos inline e valida a identidade TLS do PostgreSQL. O papel do serviço só recebe os privilégios necessários para operar o site. A separação de dados entre as contas é aplicada na API.
-
-### Revalidação do perfil hospedado
-
-`node src/test/security/hosted-smoke.cjs` testa um Ponto com o perfil `hosted` em `127.0.0.1:58084`, conectado a um banco local de teste vazio. Configure os e-mails fictícios `ponto-a@example.com` e `ponto-b@example.com` e os respectivos convites de 64 letras `a` e `b`. Use uma URL JDBC com validação TLS e uma CA de teste confiável na JVM. A suíte cobre convites, isolamento de contas, CSRF, revogação de sessão, limites por conta, cabeçalhos do navegador e renderização de descrições como texto. Use um banco novo a cada execução, pois a suíte cria as duas contas.
+O esquema está em [schema.sql](https://github.com/Takazonoo/ponto/blob/main/src/main/resources/schema.sql) e as permissões do usuário da aplicação estão em [grants-hosted.sql](https://github.com/Takazonoo/ponto/blob/main/scripts/grants-hosted.sql).
 
 ## Regras desta versão
 
