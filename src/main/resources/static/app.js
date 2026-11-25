@@ -25,7 +25,7 @@ function loadIcons() {
 }
 
 const categories = ['Alimentação','Moradia','Transporte','Jogos','Entretenimento','Vestuário','Saúde','Trabalho','Outros'];
-const methods = {PIX:'Pix', CREDIT:'Crédito', DEBIT:'Débito', CASH:'Dinheiro'};
+const methods = {PIX:'Pix', CREDIT:'Crédito', DEBIT:'Débito', CASH:'Dinheiro', BOLETO:'Boleto'};
 const palette = ['#416449','#9aaa65','#af7739','#668d85','#977859','#78964b','#777e60','#898368','#a05747'];
 const pages = {
   visao: ['Visão geral','Acompanhe seu dinheiro em um só lugar.'],
@@ -38,6 +38,12 @@ const brl = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
 const monthFormat = new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric',timeZone:'UTC'});
 const dateFormat = new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeZone:'UTC'});
 const date = (day) => new Date(`${day}T00:00:00Z`);
+const iso=(value)=>value.toISOString().slice(0,10);
+function shiftMonth(month, count) {
+  const value = date(`${month}-01`);
+  value.setUTCMonth(value.getUTCMonth()+count);
+  return value.toISOString().slice(0,7);
+}
 const fmt = (day) => dateFormat.format(date(day));
 const money = (amount) => brl.format(amount);
 const sum = (entries) => entries.reduce((total, entry) => total + Math.round(Number(entry.amount)*100),0)/100;
@@ -81,8 +87,8 @@ function seedDemo() {
 
 function localDemo() {
   demoEntries ??= seedDemo();
-  const entries=demoEntries.filter(entry=>entry.day.startsWith(month))
-    .sort((a,b)=>b.day.localeCompare(a.day) || b.id-a.id);
+  const entries=demoEntries.filter(entry=>(entry.reportDay ?? entry.day).startsWith(month))
+    .sort((a,b)=>(b.reportDay ?? b.day).localeCompare(a.reportDay ?? a.day) || b.id-a.id);
   const cash=demoEntries.filter(entry=>entry.method!=='CREDIT');
   const initialBalance=789.20;
   const balance=initialBalance+sum(cash.filter(e=>e.kind==='INCOME'))-sum(cash.filter(e=>e.kind==='EXPENSE'));
@@ -158,7 +164,7 @@ function dailyChart(expenses, cumulative=false) {
   start.setUTCMonth(start.getUTCMonth()+1,0);
   const days = start.getUTCDate();
   const daily = Array.from({length:days},(_,i)=>sum(expenses.filter(entry=>{
-    const day=Number(entry.day.slice(8));
+    const day=Number((entry.reportDay ?? entry.day).slice(8));
     return cumulative ? day<=i+1 : day===i+1;
   })));
   const max = Math.max(100,Math.ceil(Math.max(...daily)/100)*100);
@@ -186,13 +192,12 @@ function weekPanel(entries) {
   const anchor=date(month===today.slice(0,7)?today:`${month}-01`);
   const start=moveDay(anchor,weekOffset*7-(anchor.getUTCDay()+6)%7);
   const end=moveDay(start,6);
-  const iso=(value)=>value.toISOString().slice(0,10);
   const shortDate=new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit',timeZone:'UTC'});
   const names=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
   const week=names.map((name,index)=>{
     const day=moveDay(start,index);
     const key=iso(day);
-    const matching=entries.filter((entry)=>entry.day===key);
+    const matching=entries.filter((entry)=>(entry.reportDay ?? entry.day)===key);
     const total=sum(matching);
     return `<li class="week-day${key===today?' current':''}${key.slice(0,7)!==month?' outside':''}"${key===today?' aria-current="date"':''}>
       <span class="weekday">${name}</span><time datetime="${key}">${day.getUTCDate()}</time>
@@ -227,12 +232,13 @@ function table(entries, editable=false) {
   return `<div class="table-wrap"><table><thead><tr><th scope="col">Descrição</th><th scope="col">Categoria</th><th scope="col">Data</th><th scope="col">Pagamento</th><th scope="col">Valor</th>${editable?'<th scope="col">Ações</th>':''}</tr></thead>
     <tbody>${entries.map(entry=>{
       const income=entry.kind==='INCOME';
-      const locked=dashboard.payment && entry.method==='CREDIT';
-      const actions=locked?'<span class="tag">Fatura paga</span>':`<div class="row-actions">
+      const locked=entry.locked ?? (dashboard.payment && entry.method==='CREDIT');
+      const actions=locked?`<span class="tag">${entry.installmentCount?'Compra com fatura paga':'Fatura paga'}</span>`:`<div class="row-actions">
         <button class="icon-button" type="button" data-command="edit" data-id="${entry.id}">${icon('edit')} Editar</button>
         <button class="icon-button" type="button" data-command="delete" data-id="${entry.id}">${icon('trash')} Excluir</button>
       </div>`;
-      return `<tr><td><span class="row-label"><span class="tile ${income?'green':'purple'}">${icon(income?'down':'up')}</span>${escape(entry.description)}</span></td><td><span class="tag">${escape(entry.category)}</span></td><td>${fmt(entry.day)}</td><td>${methods[entry.method]}</td><td class="${income?'income':''}"><strong>${income?'+':'−'} ${money(entry.amount)}</strong></td>${editable?`<td>${actions}</td>`:''}</tr>`;
+      const installment=entry.installmentCount ? ` · ${entry.installmentNumber}/${entry.installmentCount}` : '';
+      return `<tr><td><span class="row-label"><span class="tile ${income?'green':'purple'}">${icon(income?'down':'up')}</span>${escape(entry.description)}</span></td><td><span class="tag">${escape(entry.category)}</span></td><td>${fmt(entry.day)}</td><td>${methods[entry.method]}${installment}</td><td class="${income?'income':''}"><strong>${income?'+':'−'} ${money(entry.amount)}</strong></td>${editable?`<td>${actions}</td>`:''}</tr>`;
     }).join('')}</tbody></table></div>`;
 }
 const panel = (title,subtitle,content,button='') => `<section class="card panel"><header class="panel-head"><div><h2>${title}</h2><p class="subtitle">${subtitle}</p></div>${button}</header>${content}</section>`;
@@ -250,11 +256,12 @@ function filterRows() {
 }
 function render() {
   if (!dashboard) return;
-  const {entries,balance,invoice,initialBalance,payment,dueDate,name}=dashboard;
+  const {entries,balance,invoice,initialBalance,payment,dueDate,closesOn,name}=dashboard;
   const expenses=entries.filter(e=>e.kind==='EXPENSE');
   const income=entries.filter(e=>e.kind==='INCOME');
   const credit=expenses.filter(e=>e.method==='CREDIT');
-  const isClosed=month<today.slice(0,7);
+  const cycleClose=closesOn ?? iso(moveDay(`${shiftMonth(month,1)}-01`,-1));
+  const isClosed=cycleClose<today;
   const invoiceStatus=payment?'Paga':invoice===0?'Sem compras':!isClosed?'Aberta':dueDate<today?'Vencida':'Fechada';
   activePage=Object.hasOwn(pages,location.hash.slice(1))?location.hash.slice(1):'visao';
   const [title,description]=pages[activePage];
@@ -282,7 +289,7 @@ function render() {
         ${panel('Gastos por categoria','Participação no total do mês',breakdown(expenses))}</div>`;
       break;
     case 'lancamentos':
-      view.innerHTML=panel('Histórico de lançamentos','Filtre as movimentações do mês selecionado',`
+      view.innerHTML=panel('Histórico de lançamentos','Despesas no crédito aparecem no mês da fatura. A coluna Data mostra a data da compra.',`
         <div class="filters"><input id="search" type="search" aria-label="Buscar descrição" placeholder="Buscar descrição" value="${escape(filters.search)}">
         <select id="category-filter" aria-label="Filtrar categoria">${optionList([['','Todas as categorias'],...categories.map(c=>[c,c])],filters.category)}</select>
         <select id="method-filter" aria-label="Filtrar pagamento">${optionList([['','Todos os pagamentos'],...Object.entries(methods)],filters.method)}</select></div><div id="entry-list"></div>`);
@@ -298,8 +305,9 @@ function render() {
         ${panel('Movimentações da conta','Receitas e despesas à vista do mês. Faturas pagas são exibidas na área do cartão.',table(entries.filter(e=>e.method!=='CREDIT')))}`;
       break;
     case 'fatura':
-      view.innerHTML=`<section class="card panel details"><div><h2>Cartão principal</h2><p class="subtitle">A fatura fecha no último dia do mês e vence no dia 10 do mês seguinte.</p></div>
-        ${details([['Total',money(invoice)],['Status',invoiceStatus],['Vencimento',fmt(dueDate)],...(payment?[['Pago em',fmt(payment.paidOn)]]:[])])}
+      view.innerHTML=`<section class="card panel details"><div><h2>Cartão principal</h2><p class="subtitle">Compras a partir de ${fmt(iso(moveDay(cycleClose,1)))} entram na próxima fatura.</p></div>
+        ${details([['Total',money(invoice)],['Status',invoiceStatus],['Fechamento',fmt(cycleClose)],['Vencimento',fmt(dueDate)],...(payment?[['Pago em',fmt(payment.paidOn)]]:[])])}
+        <button class="button secondary" type="button" data-command="card">Configurar ciclo</button>
         ${isClosed&&invoice>0&&!payment?'<button class="button primary" data-command="pay">Registrar pagamento</button>':''}</section>
         ${panel('Compras no crédito','Lançamentos incluídos nesta fatura',table(credit))}`;
       break;
@@ -357,9 +365,14 @@ function entryDialog(entry) {
   showDialog(entry?'Editar lançamento':'Novo lançamento',`
     <label>Tipo<select name="kind">${optionList([['EXPENSE','Despesa'],['INCOME','Receita']],entry?.kind)}</select></label>
     <label>Descrição<input name="description" maxlength="120" required value="${escape(entry?.description)}"></label>
-    <label>Valor em reais<input name="amount" inputmode="decimal" required placeholder="0,00" value="${entry?String(entry.amount).replace('.',','):''}"></label>
+    <label>Valor total em reais<input name="amount" inputmode="decimal" required placeholder="0,00" value="${entry?String(entry.purchaseAmount ?? entry.amount).replace('.',','):''}"></label>
     <label>Categoria<select name="category">${optionList(categories.map(c=>[c,c]),entry?.category)}</select></label>
     <label>Meio de pagamento<select name="method">${optionList(Object.entries(methods),entry?.method)}</select></label>
+    <label id="installment-field" hidden>Parcelamento<select name="installments">${optionList(
+      Array.from({length:60},(_,i)=>[String(i+1),i ? `${i+1} parcelas` : 'À vista (1×)']),
+      String(entry?.installmentCount ?? 1))}</select></label>
+    <p id="installment-summary" class="subtitle" aria-live="polite" hidden></p>
+    <p id="invoice-preview" class="subtitle" aria-live="polite" hidden></p>
     <label>Data<input name="day" type="date" required min="2000-01-01" max="${today}" value="${day}"></label>
     ${isDemo?'<p class="subtitle">As alterações da demonstração duram até recarregar a página.</p>':''}`,
     'Salvar',async form=>{
@@ -368,28 +381,94 @@ function entryDialog(entry) {
       const description=data.description.trim();
       if (!description) throw new Error('Informe uma descrição.');
       if (amount<=0 || amount>9999999999.99) throw new Error('Informe um valor positivo de até R$ 9.999.999.999,99.');
-      const draft={...data,id:entry?.id,amount,description};
+      const installments=data.method==='CREDIT' ? Number(data.installments) : 1;
+      const cents=Math.round(amount*100);
+      if (cents<installments) throw new Error('Cada parcela precisa ter pelo menos um centavo.');
+      const draft={...data,id:entry?.id,amount,description,installments};
+      let entryMonth=data.day.slice(0,7);
       if (isDemo) {
         demoEntries ??= seedDemo();
-        const updated={...draft,id:entry?.id ?? demoNextId++};
-        demoEntries=demoEntries.filter(item=>item.id!==updated.id);
-        demoEntries.push(updated);
+        if (entry) removeDemoEntry(entry);
+        const group=installments>1 ? demoNextId : null;
+        demoEntries.push(...Array.from({length:installments},(_,index)=>({
+          ...draft,id:demoNextId++,group,purchaseAmount:amount,
+          amount:(Math.floor(cents/installments)+Number(index<cents%installments))/100,
+          installmentCount:group ? installments : null,
+          installmentNumber:group ? index+1 : null,
+          reportDay:index ? `${shiftMonth(entryMonth,index)}-01` : data.day,
+        })));
       } else {
-        await api('/entries','POST',draft);
+        ({month:entryMonth}=await api('/entries','POST',draft));
       }
-      const entryMonth=data.day.slice(0,7);
       if (entryMonth!==month) weekOffset=0;
       month=entryMonth;
       notice('Lançamento salvo.');
       await refresh();
     });
-  const kind=$('modal-form').elements.kind;
-  const method=$('modal-form').elements.method;
+  const {kind,method,installments,amount,day:purchaseDate}=$('modal-form').elements;
+  const invoicePreview=$('invoice-preview');
+  let previewRequest=0;
+  let firstInvoiceMonth;
+  function showInvoiceMonths() {
+    invoicePreview.hidden=!firstInvoiceMonth;
+    if (!firstInvoiceMonth) return;
+    const last=shiftMonth(firstInvoiceMonth,Number(installments.value)-1);
+    const formatMonth=value=>monthFormat.format(date(`${value}-01`));
+    invoicePreview.textContent=last===firstInvoiceMonth
+      ? `Fatura prevista: ${formatMonth(firstInvoiceMonth)}.`
+      : `Faturas previstas: de ${formatMonth(firstInvoiceMonth)} a ${formatMonth(last)}.`;
+  }
+  async function updateInvoiceMonths() {
+    const request=++previewRequest;
+    firstInvoiceMonth=undefined;
+    showInvoiceMonths();
+    if (method.value!=='CREDIT' || !purchaseDate.value || !purchaseDate.validity.valid) return;
+    if (isDemo) {
+      firstInvoiceMonth=purchaseDate.value.slice(0,7);
+    } else {
+      const params=new URLSearchParams({day:purchaseDate.value});
+      if (entry) params.set('id',entry.id);
+      try {
+        const {month}=await api(`/card/preview?${params}`);
+        if (request!==previewRequest) return;
+        firstInvoiceMonth=month;
+      } catch { return; }
+    }
+    showInvoiceMonths();
+  }
+  function updateInstallments() {
+    const credit=method.value==='CREDIT';
+    $('installment-field').hidden=!credit;
+    installments.disabled=!credit;
+    const summary=$('installment-summary');
+    summary.hidden=true;
+    if (!credit || Number(installments.value)<2) return;
+    let cents;
+    try { cents=Math.round(numeric(amount.value)*100); } catch { return; }
+    const count=Number(installments.value);
+    if (cents<count || cents>999999999999) return;
+    const base=Math.floor(cents/count), extra=cents%count;
+    summary.textContent=extra
+      ? `${extra} × ${money((base+1)/100)} + ${count-extra} × ${money(base/100)}`
+      : `${count} × ${money(base/100)}`;
+    summary.hidden=false;
+  }
   kind.onchange=()=>{
-    method.querySelector('[value=CREDIT]').disabled=kind.value==='INCOME';
-    if(kind.value==='INCOME' && method.value==='CREDIT') method.value='PIX';
+    const income=kind.value==='INCOME';
+    for (const value of ['CREDIT','BOLETO']) method.querySelector(`[value=${value}]`).disabled=income;
+    if(income && ['CREDIT','BOLETO'].includes(method.value)) method.value='PIX';
+    updateInstallments();
+    updateInvoiceMonths();
   };
+  method.onchange=()=>{updateInstallments();updateInvoiceMonths();};
+  installments.onchange=()=>{updateInstallments();showInvoiceMonths();};
+  amount.oninput=updateInstallments;
+  purchaseDate.onchange=updateInvoiceMonths;
   kind.onchange();
+}
+
+function removeDemoEntry(entry) {
+  demoEntries=demoEntries.filter(item=>entry.group ? item.group!==entry.group : item.id!==entry.id);
 }
 
 $('modal-form').addEventListener('submit',async event=>{
@@ -451,9 +530,9 @@ $('view').onclick=event=>{
       break;
     case 'delete':
       if(!entry) return;
-      showDialog('Excluir lançamento',`<p>Excluir ${escape(entry.description)} de ${money(entry.amount)}?</p>`,'Excluir',async()=>{
+      showDialog('Excluir lançamento',`<p>Excluir ${escape(entry.description)} de ${money(entry.purchaseAmount ?? entry.amount)}?${entry.installmentCount ? ' Todas as parcelas serão excluídas.' : ''}</p>`,'Excluir',async()=>{
         if (signedIn) await api(`/entries/${entry.id}`,'DELETE');
-        else demoEntries=demoEntries.filter(item=>item.id!==entry.id);
+        else removeDemoEntry(entry);
         notice('Lançamento excluído.');
         await refresh();
       });
@@ -463,6 +542,17 @@ $('view').onclick=event=>{
       showDialog('Ajustar saldo inicial',`<label>Saldo antes do primeiro lançamento<input name="amount" inputmode="decimal" required value="${String(dashboard.initialBalance).replace('.',',')}"></label>`,'Salvar',async form=>{
         await api('/balance','POST',{amount:numeric(form.get('amount'))});notice('Saldo inicial atualizado.');await refresh();
       });
+      break;
+    case 'card':
+      if(!signedIn){auth();return;}
+      showDialog('Configurar ciclo do cartão',`
+        <p>Use os dias informados pelo emissor. Compras após o fechamento entram na próxima fatura. Os ciclos já definidos preservam suas datas.</p>
+        <label>Dia de fechamento<input type="number" name="closeDay" min="1" max="31" required value="${dashboard.card.closeDay}"></label>
+        <label>Dia de vencimento<input type="number" name="dueDay" min="1" max="31" required value="${dashboard.card.dueDay}"></label>`,
+        'Salvar',async form=>{
+          await api('/card','POST',{closeDay:Number(form.get('closeDay')),dueDay:Number(form.get('dueDay'))});
+          notice('Configuração salva para os próximos ciclos.');await refresh();
+        });
       break;
     case 'pay':
       if(!signedIn){auth();return;}

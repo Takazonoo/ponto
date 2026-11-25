@@ -46,7 +46,8 @@ async function checkRendering({html, script, session, dashboard}) {
   vm.runInNewContext(script, {
     document,
     location: {hash:''},
-    window: {addEventListener(type, handler) { events.set(type, handler); }},
+    URLSearchParams,
+    window: {location:{search:''}, addEventListener(type, handler) { events.set(type, handler); }},
     fetch: async route => sessionExpired ? {ok:false,status:401,json:async () => ({})} : ({
       ok:true,
       text:async () => JSON.stringify(route === '/api/session' ? {...session,signedIn:true} : dashboard)
@@ -125,6 +126,27 @@ async function test() {
   const id=dashboardA.entries[0].id;
   await b('/api/entries/'+id,{method:'DELETE',status:404});
   await b('/api/entries',{method:'POST',body:{...entry,id},status:404});
+
+  await b('/api/card',{method:'POST',body:{closeDay:20,dueDay:31},token:'inválido',status:403});
+  await b('/api/card',{method:'POST',body:{closeDay:20,dueDay:31}});
+  const purchase={...entry,day:'2024-12-21',amount:700,installments:3};
+  await stranger('/api/card/preview?day='+purchase.day,{status:401});
+  assert.equal((await b('/api/card/preview?day='+purchase.day)).data.month,'2025-01');
+  assert.equal((await b('/api/entries',{method:'POST',body:purchase})).data.month,'2025-01');
+  const january=(await b('/api/dashboard?month=2025-01')).data;
+  const february=(await b('/api/dashboard?month=2025-02')).data;
+  const march=(await b('/api/dashboard?month=2025-03')).data;
+  assert.deepEqual([january.invoice,february.invoice,march.invoice],[233.34,233.33,233.33]);
+  assert.equal(february.dueDate,'2025-02-28');
+  assert.equal(february.entries[0].installmentNumber,2);
+  assert.equal(february.entries[0].purchaseAmount,700);
+  await b('/api/entries',{method:'POST',body:{...purchase,method:'BOLETO',installments:1,amount:75}});
+  assert.equal((await b('/api/dashboard?month=2024-12')).data.balance,-75);
+  assert.equal((await b('/api/dashboard?month=2024-12')).data.invoice,0);
+  await b('/api/invoice/pay?month=2025-01',{method:'POST'});
+  await b('/api/entries/'+february.entries[0].id,{method:'DELETE',status:400});
+  assert.equal((await b('/api/dashboard?month=2025-02')).data.entries[0].locked,true);
+  assert.equal((await a('/api/dashboard?month=2025-02')).data.card.closeDay,31);
   await a('/api/logout',{method:'POST'});
   assert.equal((await fetch(origin+month,{headers:{Cookie:activeA.cookie}})).status,401);
 
